@@ -10,6 +10,7 @@
 import os, sys
 import time
 import random
+import copy
 import neat
 import cell
 import sudoku
@@ -21,13 +22,15 @@ import output
 file_name = 'dif-1.php'
 local_dir = os.path.dirname(__file__)
 sudoku_dir = os.path.join(local_dir, 'sudokus')
-cohort_size = 2
+cohort_size = 5
 
 digits = '123456789'
 rows = 'ABCDEFGHI'
 columns = digits
+digit_list = []
 
-
+for digit in digits:
+    digit_list.append(digit)
 #--------------------------------------------------------------------------------------#
 # Load puzzles in file ### MOVE TO SEPARATE FILE
 def load_sudokus(number):
@@ -57,6 +60,12 @@ def parse_line(input_string):
     return parsed_string
 #--------------------------------------------------------------------------------------#
 
+def generate_options(cell):
+    options = list(digit_list)
+    for peer in cell.get_peers():
+        if peer.get_value() in options:
+            options.remove(peer.get_value())
+    return options
 
 def eval_fitness(genomes, config):
     eval_fitness.organism = 0
@@ -78,32 +87,60 @@ def eval_fitness(genomes, config):
 
         for i in range(cohort_size):
             partial_solution = inputs[i]
+            sudoku_fitness = 0
             ###print(partial_solution)
             ###print(solution[i])
             ###print(solution[i][0])
             
             while 0 in partial_solution:
+                sudoku_cells = sudokus[i].get_cells()
                 outputs = net.activate(partial_solution)
-                cell = int(outputs[0]*81)
-                cell_value = int(outputs[1]*9)
+                cell_ID = int(outputs[0]*82)
+                cell_value = int(outputs[1]*10)
                 
-                if cell < 1 or cell > 81:
+                ### INSERT VALID VALUE LOGIC BASED ON CELL PEERS
+                if cell_ID < 1 or cell_ID > 81:
+                    #print('invalid cell')
+                    sudoku_fitness -= 10
                     break
-                elif cell_value < 1 or cell_value > 9:
+                if cell_value < 1 or cell_value > 9:
+                    #print('invalid value')
+                    sudoku_fitness -= 5
                     break
-                elif partial_solution[cell-1] != 0:
+                if partial_solution[cell_ID-1] != 0:
                     #print('We already know that answer Einstein')
+                    sudoku_fitness -= 2
                     break
-                elif solution[i][cell-1] != cell_value:
-                    #print('Wrong answer: ', solution[i][cell-1], cell_value)
-                    genome.fitness += 0.1
-                    break
-                else:
-                    print('Awesome!!!!', solution[i][cell-1], cell_value)
-                    partial_solution[cell-1] = cell_value
-                    genome.fitness += 1
-            
 
+                cell = sudoku_cells[cell_ID-1]
+                options = list(map(int, generate_options(cell)))
+                ###print('cell index', cell_ID, '\tvalid options', options)
+
+                
+                if solution[i][cell_ID-1] == cell_value:
+                    print('Awesome!!!!', solution[i][cell_ID-1], cell_value)
+                    cell.set_value(cell_value)
+                    partial_solution[cell_ID-1] = cell_value
+                    sudoku_fitness += 10
+                    
+                elif cell_value in options:
+                    print('Valid number... but not the correct number.', solution[i][cell_ID-1], cell_value)
+                    partial_solution[cell_ID-1] = cell_value
+                    cell.set_value(cell_value)
+                    partial_solution[cell_ID-1] = cell_value
+                    sudoku_fitness += 2
+                else:
+                    break#print('Valid cell, but invalid answer', solution[i][cell_ID-1], cell_value)
+
+            if 0 not in partial_solution:
+                sudoku_fitness *= 10
+            sol = []
+            for cell in sudoku_cells:
+                sol.append(cell.get_value())
+            #output.print_grid(sol)
+            #output.print_grid(partial_solution)
+            #output.print_grid(solution[i])
+            genome.fitness += sudoku_fitness
         
         #print ('Organism: %s\tFitness: %s' % (eval_fitness.organism, genome.fitness))
 
@@ -121,9 +158,11 @@ def run(config_file):
     try:
         pop = neat.Checkpointer.restore_checkpoint(last_checkpoint)
         print('Loading last population save state.')
+        time.sleep(2)
     except:
         pop = neat.Population(config)
         print('No previous save state found. Generating new population.')
+        time.sleep(2)
 
     # Add reporter modules.
     pop.add_reporter(neat.StdOutReporter(True))
@@ -131,10 +170,10 @@ def run(config_file):
     pop.add_reporter(stats)
 
     #Create a checkpoint every x generations.
-    #pop.add_reporter(neat.Checkpointer(1))
+    pop.add_reporter(neat.Checkpointer(100))
 
     # Run for 100 generations.
-    winner = pop.run(eval_fitness, 100)
+    winner = pop.run(eval_fitness, 1000)
     #print('\nBest genome:\n{!s}'.format(winner))
     
     # Display output of the most fit genome against overall population fitness (install and import visualize module).

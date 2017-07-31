@@ -6,7 +6,7 @@ rows = 'ABCDEFGHI'
 def print_grid(grid):
     line = ''
     for i in range(len(grid)):
-        line += grid[i]
+        line += str(grid[i])
         if (i+1)%9 == 0:
             print(line)
             line = ''

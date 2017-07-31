@@ -10,6 +10,8 @@ digit_list = []
 timestamp = []
 solution = []
 
+
+### MOVE TO SUDOKU CLASS
 for digit in digits:
     digit_list.append(digit)
 
@@ -23,10 +25,10 @@ def solve(sudoku):
     evaluate_cells(sudoku_cells)
     end_time = time.time()
     recursion_time = end_time - start_time
-    print('Time to finish recursive function:\t%.3f sec.' % recursion_time)
+    #print('Time to finish recursive function:\t%.3f sec.' % recursion_time)
     return solution
 
-
+### MOVE TO SUDOKU CLASS
 def generate_options(cell):
     options = list(digit_list)
     for peer in cell.get_peers():
@@ -36,12 +38,12 @@ def generate_options(cell):
 
 # Recursive function brute forcing solutions. Change to return function to
 # cancel deep evaluation (i.e. whether there is more than one solution)
-def evaluate_cells(sudoku_cells,iteration = 0):
+def evaluate_cells(sudoku_cells, iteration = 0):
     cell = sudoku_cells[iteration]
     if cell.get_is_constant():
         if iteration == len(sudoku_cells)-1:
             process_solution(sudoku_cells)
-        else: iterate_cell(sudoku_cells,iteration)
+        else: iterate_cell(sudoku_cells, iteration)
     else:
         options = list(generate_options(cell))
         if len(options) > 0:
@@ -50,11 +52,11 @@ def evaluate_cells(sudoku_cells,iteration = 0):
                 if iteration == len(sudoku_cells)-1:
                     process_solution(sudoku_cells)
                 else:
-                    iterate_cell(sudoku_cells,iteration)
+                    iterate_cell(sudoku_cells, iteration)
                     cell.set_value('0')
         else: cell.set_value('0')
 
-def iterate_cell(sudoku_cells,iteration):
+def iterate_cell(sudoku_cells, iteration):
     if iteration < len(sudoku_cells)-1:
         iteration += 1
     evaluate_cells(sudoku_cells,iteration)
@@ -64,6 +66,6 @@ def process_solution(sudoku_cells):
     solve_time = end_time - timestamp[0]
     for cell in sudoku_cells:
         solution.append(cell.get_value())
-    print('Time for solution:\t\t\t%.3f sec.' % solve_time)
+    #print('Time for solution:\t\t\t%.3f sec.' % solve_time)
 
     
