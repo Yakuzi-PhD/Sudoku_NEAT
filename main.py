@@ -16,13 +16,17 @@ import cell
 import sudoku
 import solver
 import output
+from pygame import mixer
 
 
 # Specify the name of the sudoku input file here.
 file_name = 'dif-1.php'
 local_dir = os.path.dirname(__file__)
 sudoku_dir = os.path.join(local_dir, 'sudokus')
-cohort_size = 5
+cohort_size = 25
+
+mixer.init()
+
 
 digits = '123456789'
 rows = 'ABCDEFGHI'
@@ -83,7 +87,7 @@ def eval_fitness(genomes, config):
     for genome_id, genome in genomes:
         eval_fitness.organism += 1
         genome.fitness = 0
-        net = neat.nn.RecurrentNetwork.create(genome, config)
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
 
         for i in range(cohort_size):
             partial_solution = inputs[i]
@@ -101,15 +105,15 @@ def eval_fitness(genomes, config):
                 ### INSERT VALID VALUE LOGIC BASED ON CELL PEERS
                 if cell_ID < 1 or cell_ID > 81:
                     #print('invalid cell')
-                    sudoku_fitness -= 10
+                    sudoku_fitness -= 100
                     break
                 if cell_value < 1 or cell_value > 9:
                     #print('invalid value')
-                    sudoku_fitness -= 5
+                    sudoku_fitness -= 100
                     break
                 if partial_solution[cell_ID-1] != 0:
                     #print('We already know that answer Einstein')
-                    sudoku_fitness -= 2
+                    sudoku_fitness -= 50
                     break
 
                 cell = sudoku_cells[cell_ID-1]
@@ -118,19 +122,21 @@ def eval_fitness(genomes, config):
 
                 
                 if solution[i][cell_ID-1] == cell_value:
-                    print('Awesome!!!!', solution[i][cell_ID-1], cell_value)
+                    #print('Awesome!!!!', solution[i][cell_ID-1], cell_value)
                     cell.set_value(cell_value)
                     partial_solution[cell_ID-1] = cell_value
                     sudoku_fitness += 10
                     
                 elif cell_value in options:
-                    print('Valid number... but not the correct number.', solution[i][cell_ID-1], cell_value)
+                    #print('Valid number... but not the correct number.', solution[i][cell_ID-1], cell_value)
                     partial_solution[cell_ID-1] = cell_value
                     cell.set_value(cell_value)
                     partial_solution[cell_ID-1] = cell_value
                     sudoku_fitness += 2
                 else:
-                    break#print('Valid cell, but invalid answer', solution[i][cell_ID-1], cell_value)
+                    sudoku_fitness -= 10
+                    #print('Valid cell, but invalid answer', solution[i][cell_ID-1], cell_value)
+                    break
 
             if 0 not in partial_solution:
                 sudoku_fitness *= 10
@@ -169,24 +175,29 @@ def run(config_file):
     stats = neat.StatisticsReporter()
     pop.add_reporter(stats)
 
-    #Create a checkpoint every x generations.
-    pop.add_reporter(neat.Checkpointer(100))
+    #Create a checkpoint every x generations or y seconds.
+    pop.add_reporter(neat.Checkpointer(1000, 1800))
 
     # Run for 100 generations.
     winner = pop.run(eval_fitness, 1000)
-    #print('\nBest genome:\n{!s}'.format(winner))
+    print('\nBest genome:\n{!s}'.format(winner))
     
     # Display output of the most fit genome against overall population fitness (install and import visualize module).
     #visualize.draw_net(config, winner, True)
     #visualize.plot_stats(stats, ylog=False, view=True)
     #visualize.plot_species(stats, view=True)
+    mixer.music.load('assets/sound/radar.mp3')
+    mixer.music.play()
     print('\nRun finished.')
 
 # Main function.
 if __name__ == '__main__':
     config_path = os.path.join(local_dir, 'config')
+    mixer.music.load('assets/sound/radar.mp3')
+    mixer.music.play()
     run(config_path)
        
     #print('\nDeep solution time of %s sudokus:\t%.3f sec.' % (cohort_size,end_time-start_time))
     #print('Sudokus with multiple solutions:\t%s' % invalid_sudokus)
 
+   
