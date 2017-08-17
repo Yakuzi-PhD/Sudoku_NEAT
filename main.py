@@ -86,7 +86,7 @@ def eval_fitness(genomes, config):
     for genome_id, genome in genomes:
         eval_fitness.organism += 1
         genome.fitness = 0
-        net = neat.nn.RecurrentNetwork.create(genome, config)
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
 
         for i in range(cohort_size):
             sudoku_fitness = 0
@@ -101,7 +101,7 @@ def eval_fitness(genomes, config):
             for cell in outputs:
                 if cell < 1:
                     #print('invalid value')
-                    sudoku_fitness -= 100000
+                    sudoku_fitness -= 10000000
                 elif cell > 9:
                     sudoku_fitness -= 10000
                 elif cell == solution[i][cell]:
@@ -167,10 +167,10 @@ def run(config_file):
     pop.add_reporter(stats)
 
     #Create a checkpoint every x generations or y seconds.
-    pop.add_reporter(neat.Checkpointer(1000, 1800))
+    pop.add_reporter(neat.Checkpointer(5000, 9000))
 
     # Run for 100 generations.
-    winner = pop.run(eval_fitness, 5001)
+    winner = pop.run(eval_fitness, 25001)
     #print('\nBest genome:\n{!s}'.format(winner))
     
     # Display output of the most fit genome against overall population fitness (install and import visualize module).
